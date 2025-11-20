@@ -706,7 +706,10 @@ class resram_data:
                 self.abs_exp = self.obj.abs_exp
             except Exception:
                 print("No experimental absorption spectrum found in directory/")
-
+            try:
+                self.fl_exp = self.obj.fl_exp
+            except Exception:
+                print("No experimental fluorescence spectrum found in directory/")
             try:
                 self.profs_exp = self.obj.profs_exp
             except Exception:
@@ -841,7 +844,7 @@ class resram_data:
         except Exception:
             print("no experimental absorption data")
         try:
-            self.ax_abs.plot(self.EL, self.fl_exp[:, 1], label="expt. fl")
+            self.ax_abs.plot(self.EL, self.fl.max()*self.fl_exp[:, 1]/self.fl_exp[:, 1].min(), label="expt. fl")
         except Exception:
             print("no experimental fluorescence data")
         self.ax_abs.set_title("Absorption and Fluorescence Spectra")
