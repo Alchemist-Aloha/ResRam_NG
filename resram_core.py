@@ -40,6 +40,10 @@ class load_input:
             print("No experimental absorption spectrum found in directory/")
         try:
             fl_exp_orig = np.loadtxt(self.dir + "fl_exp.dat")
+            if fl_exp_orig[0,0] > fl_exp_orig[-1,0]:
+                print("Experimental fluorescence spectrum appears to be inverted.")
+                fl_exp_orig[:,0] = fl_exp_orig[::-1,0]
+                fl_exp_orig[:,1] = fl_exp_orig[::-1,1]
             fl_exp_interp = np.interp(self.convEL,fl_exp_orig[:, 0], fl_exp_orig[:, 1])
             self.fl_exp = np.stack((self.convEL,fl_exp_interp),axis=0).T
         except Exception:
