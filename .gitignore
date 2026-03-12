@@ -4,7 +4,7 @@ test.ipynb
 # Do not ship old c_matrix*.c files, due to
 # compatibility problems with newer numpy versions
 *.c
-
+*.svg
 #data output files
 *_data/
 # Dask
@@ -36,7 +36,7 @@ cython_debug
 __pycache__/
 *.py[cod]
 *$py.class
-
+/__pycache__/*
 # Vagrant
 .vagrant
 
@@ -192,3 +192,6 @@ comparison-results-current
 docs/source/notebooks/quickstart/quickstart_project/data
 docs/source/notebooks/quickstart/quickstart_project/results
 docs/source/notebooks/quickstart/quickstart_project/project.gta
+Analysis_y6_fbr.ipynb
+y6/
+fbr/

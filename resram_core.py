@@ -30,13 +30,22 @@ class load_input:
         self.inp_txt()
         try:
             abs_exp_orig = np.loadtxt(self.dir + "abs_exp.dat")
+            if abs_exp_orig[0,0] > abs_exp_orig[-1,0]:
+                print("Experimental absorption spectrum appears to be inverted.")
+                abs_exp_orig[:,0] = abs_exp_orig[::-1,0]
+                abs_exp_orig[:,1] = abs_exp_orig[::-1,1]
             abs_spec_interp = np.interp(self.convEL,abs_exp_orig[:, 0], abs_exp_orig[:, 1])
-            self.abs_exp = np.concat(self.convEL,abs_spec_interp)
+            self.abs_exp = np.stack((self.convEL,abs_spec_interp),axis=0).T
         except Exception:
             print("No experimental absorption spectrum found in directory/")
         try:
             fl_exp_orig = np.loadtxt(self.dir + "fl_exp.dat")
-            self.fl_exp = np.interp(self.convEL,fl_exp_orig[:, 0], fl_exp_orig[:, 1])
+            if fl_exp_orig[0,0] > fl_exp_orig[-1,0]:
+                print("Experimental fluorescence spectrum appears to be inverted.")
+                fl_exp_orig[:,0] = fl_exp_orig[::-1,0]
+                fl_exp_orig[:,1] = fl_exp_orig[::-1,1]
+            fl_exp_interp = np.interp(self.convEL,fl_exp_orig[:, 0], fl_exp_orig[:, 1])
+            self.fl_exp = np.stack((self.convEL,fl_exp_interp),axis=0).T
         except Exception:
             print("No experimental Raman cross section found in directory/")               
         try:
@@ -138,8 +147,9 @@ class load_input:
         self.n = float(self.inp[8])  # Refractive index
 
         # Raman pump wavelengths to compute spectra at
-        self.rpumps = np.asarray(np.loadtxt(self.dir + "rpumps.dat"))
-        self.rp = np.zeros_like(self.rpumps)
+        try:
+            self.rpumps = np.asarray(np.loadtxt(self.dir + "rpumps.dat"))
+            self.rp = np.zeros_like(self.rpumps)
         # for rps, rpump in enumerate(self.rpumps):
         #     # Calculate absolute differences between rpump and convEL
         #     diffs = np.abs(self.convEL - rpump)
@@ -149,14 +159,16 @@ class load_input:
 
         #     # Update self.rp with the index of the minimum difference
         #     self.rp[rps] = min_index
-        diffs = np.abs(self.convEL[:, np.newaxis] - self.rpumps)
-        self.rp = np.argmin(diffs, axis=0)
-        self.rp = self.rp.astype(int)
+            diffs = np.abs(self.convEL[:, np.newaxis] - self.rpumps)
+            self.rp = np.argmin(diffs, axis=0)
+            self.rp = self.rp.astype(int)
+
+        except Exception:
+            print("No rpumps.dat file found in directory/. Skipping Raman calculation.")
         self.rshift = np.arange(
             float(self.inp[9]), float(self.inp[10]), float(self.inp[11])
-        )  # range and step size of Raman spectrum
+            )  # range and step size of Raman spectrum
         self.res = float(self.inp[12])  # Peak width in Raman spectra
-
         # Determine order from Boltzmann distribution of possible initial states #
         # desired boltzmann coefficient for cutoff
         self.convergence = float(self.inp[14])
@@ -460,19 +472,19 @@ def cross_sections(obj):
         )
 
         for idxtm, tm in enumerate(obj.tm, start=0):
-            integ_r1[idxtm, :] = np.trapz(
+            integ_r1[idxtm, :] = np.trapezoid(
                 K_r[(np.abs(len(obj.tm) / 2 - idxtm)) :, idxtm, :], axis=0
             )
 
-        integ = np.trapz(integ_r1, axis=0)
+        integ = np.trapezoid(integ_r1, axis=0)
     ######################################################
 
-    integ_a = np.trapz(K_a, axis=1)
+    integ_a = np.trapezoid(K_a, axis=1)
     obj.abs_cross = (
         obj.preA * obj.convEL * np.convolve(integ_a, np.real(H), "valid") / (np.sum(H))
     )
 
-    integ_f = np.trapz(K_f, axis=1)
+    integ_f = np.trapezoid(K_f, axis=1)
     obj.fl_cross = (
         obj.preF * obj.convEL * np.convolve(integ_f, np.real(H), "valid") / (np.sum(H))
     )
@@ -490,7 +502,7 @@ def cross_sections(obj):
 
     for idx, wg_value in enumerate(obj.wg):
         if obj.order == 1:
-            integ_r = np.trapz(K_r[idx, :, :], axis=1)
+            integ_r = np.trapezoid(K_r[idx, :, :], axis=1)
             obj.raman_cross[idx, :] = (
                 obj.preR
                 * obj.convEL
@@ -499,7 +511,7 @@ def cross_sections(obj):
                 / np.sum(H)
             )
         elif obj.order > 1:
-            integ_r = np.trapz(K_r[idx, :, :], axis=1)
+            integ_r = np.trapezoid(K_r[idx, :, :], axis=1)
             obj.raman_cross[idx, :] = (
                 obj.preR
                 * obj.convEL
@@ -525,17 +537,20 @@ def cross_sections(obj):
 
 def run_save(obj, current_time_str):
     abs_cross, fl_cross, raman_cross, boltz_states, boltz_coef = cross_sections(obj)
-    raman_spec = np.zeros((len(obj.rshift), len(obj.rpumps)))
+    try:
+        raman_spec = np.zeros((len(obj.rshift), len(obj.rpumps)))
 
-    for i, rp in enumerate(obj.rp):
-        for l, wg in enumerate(obj.wg):
-            raman_spec[:, i] += (
-                np.real((raman_cross[l, rp]))
-                * (1 / np.pi)
-                * (0.5 * obj.res)
-                / ((obj.rshift - wg) ** 2 + (0.5 * obj.res) ** 2)
-            )
-
+        for i, rp in enumerate(obj.rp):
+            for l, wg in enumerate(obj.wg):
+                raman_spec[:, i] += (
+                    np.real((raman_cross[l, rp]))
+                    * (1 / np.pi)
+                    * (0.5 * obj.res)
+                    / ((obj.rshift - wg) ** 2 + (0.5 * obj.res) ** 2)
+                )
+    except Exception:
+        raman_spec = None
+        print("Raman calculation skipped, no rpumps.dat file found in directory/")
     """
     raman_full = np.zeros((len(convEL),len(rshift)))
     for i in range(len(convEL)):
@@ -553,26 +568,34 @@ def run_save(obj, current_time_str):
     else:
         os.mkdir('./data')
     """
-    os.mkdir("./" + current_time_str + "_data")
-
-    obj.s_reorg = obj.beta * (obj.L / obj.k) ** 2 / 2  # reorganization energy cm^-1
+    try:
+        os.mkdir("./" + current_time_str + "_data")
+    except FileExistsError:
+        pass
+    # Solvent reorganization energy cm^-1
+    obj.s_reorg = obj.beta * (obj.L / obj.k) ** 2 / 2  
     # internal reorganization energy
     obj.w_reorg = 0.5 * np.sum((obj.delta) ** 2 * obj.wg)
-    obj.reorg = obj.w_reorg + obj.s_reorg  # Total reorganization energy
+    # Total reorganization energy
+    obj.reorg = obj.w_reorg + obj.s_reorg  
     np.set_printoptions(threshold=sys.maxsize)
     np.savetxt(
         current_time_str + "_data/profs.dat",
         np.real(np.transpose(raman_cross)),
         delimiter="\t",
     )
-    np.savetxt(current_time_str + "_data/raman_spec.dat", raman_spec, delimiter="\t")
+    try:
+        np.savetxt(current_time_str + "_data/raman_spec.dat", raman_spec, delimiter="\t")
+        np.savetxt(current_time_str + "_data/rpumps.dat", obj.rpumps)
+    except Exception:
+        pass
     np.savetxt(current_time_str + "_data/EL.dat", obj.convEL)
     np.savetxt(current_time_str + "_data/deltas.dat", obj.delta)
     np.savetxt(current_time_str + "_data/Abs.dat", np.real(abs_cross))
     np.savetxt(current_time_str + "_data/Fl.dat", np.real(fl_cross))
     # np.savetxt("data/Disp.dat",np.real(disp_cross))
     np.savetxt(current_time_str + "_data/rshift.dat", obj.rshift)
-    np.savetxt(current_time_str + "_data/rpumps.dat", obj.rpumps)
+
 
     inp_list = [float(x) for x in obj.inp]  # need rewrite
     inp_list[7] = obj.M
@@ -586,13 +609,16 @@ def run_save(obj, current_time_str):
     np.savetxt(current_time_str + "_data/freqs.dat", obj.wg)
 
     try:
-        obj.abs_exp = np.loadtxt("abs_exp.dat")
+        
         np.savetxt(current_time_str + "_data/abs_exp.dat", obj.abs_exp, delimiter="\t")
     except Exception:
         print("No experimental absorption spectrum found in directory/")
-
+    try:        
+        np.savetxt(current_time_str + "_data/fl_exp.dat", obj.fl_exp, delimiter="\t")
+    except Exception:
+        print("No experimental absorption spectrum found in directory/")
     try:
-        obj.profs_exp = np.loadtxt("profs_exp.dat")
+        
         np.savetxt(
             current_time_str + "_data/profs_exp.dat", obj.profs_exp, delimiter="\t"
         )
@@ -690,7 +716,10 @@ class resram_data:
                 self.abs_exp = self.obj.abs_exp
             except Exception:
                 print("No experimental absorption spectrum found in directory/")
-
+            try:
+                self.fl_exp = self.obj.fl_exp
+            except Exception:
+                print("No experimental fluorescence spectrum found in directory/")
             try:
                 self.profs_exp = self.obj.profs_exp
             except Exception:
@@ -699,14 +728,20 @@ class resram_data:
         else:
             self.filename = input
             self.wg = np.loadtxt(input + "/freqs.dat")
-            self.rpumps = np.loadtxt(input + "/rpumps.dat")
+            
+            
             self.delta = np.loadtxt(input + "/deltas.dat")
             self.abs = np.loadtxt(input + "/Abs.dat")
             self.EL = np.loadtxt(input + "/EL.dat")
             self.fl = np.loadtxt(input + "/Fl.dat")
             self.raman_spec = np.loadtxt(input + "/raman_spec.dat")
             self.rshift = np.loadtxt(input + "/rshift.dat")
-            self.profs = np.loadtxt(input + "/profs.dat")
+            self.rpumps = None
+            try:
+                self.profs = np.loadtxt(input + "/profs.dat")
+                self.rpumps = np.loadtxt(input + "/rpumps.dat")
+            except Exception:
+                print("No rpumps.dat or profs.dat file found in directory " + input)
             self.inp = np.loadtxt(input + "/inp.dat")
             self.M = self.inp[7]
             self.gamma = self.inp[0]
@@ -715,111 +750,130 @@ class resram_data:
             self.kappa = self.inp[3]
             self.n = self.inp[8]
             try:
-                self.abs_exp = np.loadtxt("abs_exp.dat")
-            except Exception:
-                print("No experimental absorption spectrum found in directory/")
-            try:
                 self.abs_exp = np.loadtxt(input + "/abs_exp.dat")
             except Exception:
                 print("No experimental absorption spectrum found in directory " + input)
             try:
-                self.profs_exp = np.loadtxt("profs_exp.dat")
-            except Exception:
-                print("No experimental Raman cross section found in directory/")
-            try:
                 self.profs_exp = np.loadtxt(input + "/profs_exp.dat")
             except Exception:
                 print("No experimental Raman cross section found in directory " + input)
+            try:
+                self.fl_exp = np.loadtxt(input + "/fl_exp.dat")
+            except Exception:
+                print("No experimental fluorescence spectrum found in directory " + input)            
 
-    def plot(self):
-        self.fig_profs, self.ax_profs = plt.subplots(figsize=(8, 6))
-        self.fig_abs, self.ax_abs = plt.subplots(figsize=(8, 6))
-        self.fig_raman, self.ax_raman = plt.subplots(figsize=(8, 6))
+    def plot(self):              
         # divide color map to number of freqs
         colors = plt.cm.hsv(np.linspace(0, 1, len(self.wg)))
         cmap = ListedColormap(colors)
         # plot raman spectra at all excitation
-        for i in np.arange(len(self.rpumps)):
-            self.ax_raman.plot(
-                self.rshift, self.raman_spec[:, i], label=str(self.rpumps[i]) + " cm-1"
-            )
-        # plt.xlim(1100,1800)
-        self.ax_raman.set_title("Raman spectra")
-        self.ax_raman.set_xlabel("Raman Shift (cm-1)")
-        self.ax_raman.set_ylabel("Raman Cross Section (1e-14 A**2/Molecule)")
-        self.ax_raman.legend()
-        self.fig_raman.show()
-        ax_list = []
-        fig_list = []
-        for j in range(len(self.wg)):
-            fig, ax = plt.subplots(figsize=(8, 6))
-            fig_list.append(fig)
-            ax_list.append(ax)
-            ax.set_title("Raman Excitation Profile for " + str(self.wg[j]) + " cm-1")
-            ax.set_xlabel("Excitation Wavenumber (cm-1)")
-            ax.set_ylabel("Raman Cross Section (1e-14 A**2/Molecule)")
-            ax.legend(fontsize=8)
-            ax.set_xlim(self.EL[0], self.EL[-1])
-        # plot excitation profile with expt value
-        for i in np.arange(len(self.rpumps)):  # iterate over pump wn
-            # rp = min(range(len(convEL)),key=lambda j:abs(convEL[j]-rpumps[i]))
-            min_diff = float("inf")
-            rp = None
-
-            # iterate over all exitation wn to find the one closest to pump
-            for rps in range(len(self.EL)):
-                diff = np.absolute(self.EL[rps] - self.rpumps[i])
-                if diff < min_diff:
-                    min_diff = diff
-                    rp = rps
-            # print(rp)
-            for j in range(len(self.wg)):  # iterate over all raman freqs
-                # print(j,i)
-                # sigma[j] = sigma[j] + (1e8*(np.real(raman_cross[j,rp])-rcross_exp[j,i]))**2
-                color = cmap(j)
-                self.ax_profs.plot(
-                    self.EL,
-                    self.profs[:, j],
-                    color=color,
-                    label=str(self.wg[j]) + " cm-1",
-                ) if i == 0 else self.ax_profs.plot(
-                    self.EL, self.profs[:, j], color=color
+        if self.rpumps is not None:
+            self.fig_raman, self.ax_raman = plt.subplots(figsize=(8, 6))
+            for i in np.arange(len(self.rpumps)):
+                self.ax_raman.plot(
+                    self.rshift, self.raman_spec[:, i], label=str(self.rpumps[i]) + " cm-1"
                 )
-                ax_list[j].plot(
-                    self.EL,
-                    self.profs[:, j],
-                    color=color,
-                    label=str(self.wg[j]) + " cm-1")
-                try:
+            # plt.xlim(1100,1800)
+            self.ax_raman.set_title("Raman spectra")
+            self.ax_raman.set_xlabel("Raman Shift (cm-1)")
+            self.ax_raman.set_ylabel("Raman Cross Section (1e-14 A**2/Molecule)")
+            self.ax_raman.legend()
+            self.fig_raman.show()
+
+            ax_list = []
+            fig_list = []
+            for j in range(len(self.wg)):
+                fig, ax = plt.subplots(figsize=(8, 6))
+                fig_list.append(fig)
+                ax_list.append(ax)
+                ax.set_title("Raman Excitation Profile for " + str(self.wg[j]) + " cm-1")
+                ax.set_xlabel("Excitation Wavenumber (cm$^{{-1}}$)")
+                ax.set_ylabel("Raman Cross Section (10$^{{-14}}$ Å$^{{2}}$/Molecule)")
+                ax.legend(fontsize=8)
+                ax.set_xlim(self.EL[0], self.EL[-1])
+        else:
+            print("no rpumps.dat file found in directory/, skipping Raman spectra plot")
+        if self.rpumps:
+            self.fig_profs, self.ax_profs = plt.subplots(figsize=(8, 6))
+            # plot excitation profile with expt value
+            for i in np.arange(len(self.rpumps)):  # iterate over pump wn
+                # rp = min(range(len(convEL)),key=lambda j:abs(convEL[j]-rpumps[i]))
+                min_diff = float("inf")
+                rp = None
+
+                # iterate over all exitation wn to find the one closest to pump
+                for rps in range(len(self.EL)):
+                    diff = np.absolute(self.EL[rps] - self.rpumps[i])
+                    if diff < min_diff:
+                        min_diff = diff
+                        rp = rps
+                # print(rp)
+                for j in range(len(self.wg)):  # iterate over all raman freqs
+                    # print(j,i)
+                    # sigma[j] = sigma[j] + (1e8*(np.real(raman_cross[j,rp])-rcross_exp[j,i]))**2
+                    color = cmap(j)
                     self.ax_profs.plot(
-                        self.EL[rp], self.profs_exp[j, i], "o", color=color
+                        self.EL,
+                        self.profs[:, j],
+                        color=color,
+                        label=str(self.wg[j]) + " cm-1",
+                    ) if i == 0 else self.ax_profs.plot(
+                        self.EL, self.profs[:, j], color=color
                     )
                     ax_list[j].plot(
-                        self.EL[rp], self.profs_exp[j, i], "o", color=color
-                    )
+                        self.EL,
+                        self.profs[:, j],
+                        color=color,
+                        label=str(self.wg[j]) + " cm-1")
+                    try:
+                        self.ax_profs.plot(
+                            self.EL[rp], self.profs_exp[j, i], "o", color=color
+                        )
+                        ax_list[j].plot(
+                            self.EL[rp], self.profs_exp[j, i], "o", color=color
+                        )
 
-                except Exception:
-                    print("no experimental Raman cross section data")
-                    continue
+                    except Exception:
+                        print("no experimental Raman cross section data")
+                        continue
 
-        # ax.set_xlim(16000,22500)
-        # ax.set_ylim(0,0.5e-7)
-        self.ax_profs.set_title("Raman Excitation Profiles")
-        self.ax_profs.set_xlabel("Excitation Wavenumber (cm-1)")
-        self.ax_profs.set_ylabel("Raman Cross Section (1e-14 A**2/Molecule)")
-        self.ax_profs.legend(ncol=2, fontsize=8)
-        self.fig_profs.show()
-        self.ax_abs.plot(self.EL, self.abs, label="abs")
-        self.ax_abs.plot(self.EL, self.fl, label="fl")
+            # ax.set_xlim(16000,22500)
+            # ax.set_ylim(0,0.5e-7)
+            self.ax_profs.set_title("Raman Excitation Profiles")
+            self.ax_profs.set_xlabel("Excitation Wavenumber (cm$^{{-1}}$)")
+            self.ax_profs.set_ylabel("Raman Cross Section (10$^{{-14}}$ Å$^{{2}}$/Molecule)")
+            self.ax_profs.legend(ncol=2, fontsize=8)
+            self.fig_profs.show()
+        else:
+            print("no rpumps.dat file found in directory/, skipping Raman excitation profile plot")
+        self.fig_absfl, self.ax_fl = plt.subplots(figsize=(8, 6))
+        # self.ax_fl.plot(self.EL, self.abs, label="Calc. Abs.")
+        self.fl_w3 = self.fl*self.EL**2/self.E0**2
+        # fig,ax = plt.subplots(figsize=(8, 6))
+        # ax.plot(self.EL, self.fl_w3/self.fl_w3.max(), label="fl w3 correction")
+        # ax.plot(self.EL, self.fl/self.fl.max(), label="fl")
+        # ax.legend()
+        self.ax_fl.plot(self.EL, self.fl_w3, label="Calc. Fl.", color="red")
+        self.ax_abs = self.ax_fl.twinx()
+        self.ax_abs.plot(self.EL, self.abs, label="Calc. Abs.", color="blue")
+        # self.ax_fl.plot(self.EL, self.fl, label="fl")
         try:
-            self.ax_abs.plot(self.EL, self.abs_exp[:, -1], label="expt. abs")
+            self.ax_abs.plot(self.EL, self.abs_exp[:, 1], label="Expt. Abs.", color="blue", linestyle='dashed')
         except Exception:
             print("no experimental absorption data")
-        self.ax_abs.set_title("Absorption and Fluorescence Spectra")
-        self.ax_abs.set_xlabel("Excitation Wavenumber (cm-1)")
-        self.ax_abs.set_ylabel("Cross Section (1e-14 A**2/Molecule)")
-        self.ax_abs.legend(fontsize=8)
-        self.fig_abs.show()
+        try:
+            self.ax_fl.plot(self.EL, self.fl_w3.max()*self.fl_exp[:, 1]/self.fl_exp[:, 1].max(), label="Expt. Fl.", color="red", linestyle='dashed')
+        except Exception:
+            print("no experimental fluorescence data")
+        self.ax_fl.set_title("Absorption and Fluorescence Spectra")
+        self.ax_fl.set_xlabel("Wavenumber (cm$^{{-1}}$)", fontsize=16)
+        self.ax_fl.set_ylabel("Fluorescence intensity (a.u.)",fontsize=16)
+        self.ax_abs.set_ylabel("Cross Section (Å$^{{2}}$/Molecule)", fontsize=16)
+        self.ax_fl.legend(fontsize=18, loc='upper left')
+        self.ax_abs.legend(fontsize=18, loc='upper right')
+        self.ax_fl.tick_params(axis='both', which='major', labelsize=14)
+        self.ax_abs.tick_params(axis='both', which='major', labelsize=14)
+        self.fig_absfl.show()
 
 
 def raman_residual(param, fit_obj=None):
