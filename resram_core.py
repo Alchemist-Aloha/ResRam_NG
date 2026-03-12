@@ -148,11 +148,11 @@ class load_input:
         self.cutoff = self.kbT * 0.1  # Cutoff for Boltzmann distribution
 
         # Thermal occupation factors (η)
-        if self.T > 10.0:
-            self.beta = 1 / self.kbT  # beta in cm
+        if self.T > 0.1:
+            self.beta = 1 / self.kbT  # beta in cm^-1
             self.eta = 1 / (np.exp(self.wg / self.kbT) - 1)
-        elif self.T < 10.0:
-            self.beta = 1 / self.kbT
+        else:
+            self.beta = 1.0e10  # Effectively infinite for T=0
             self.eta = np.zeros(len(self.wg))
 
         # Broadening parameters
