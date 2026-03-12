@@ -49,7 +49,7 @@ The program looks for specific files in its folder. Here is what you need to kno
 *   **`resram_core.py`**: The "Engine." This contains all the complex math. You usually don't need to change this.
 *   **`inp.txt`**: The "Settings." This is where you set the Temperature, Refractive Index, and initial guesses for the math.
 *   **`freqs.dat`**: A list of vibrational frequencies (how fast the molecule shakes).
-*   **`deltas.dat`**: A list of "Displacements" (how far the atoms move).
+*   **`deltas.dat`**: A list of initial guesses for the "Displacements" (how far the atoms move).
 *   **`abs_exp.dat`**: Your real experimental absorption data.
 *   **`fl_exp.dat`**: Your real experimental fluorescence data.
 *   **`profs_exp.dat`**: Your real experimental Raman extinction profiles.
