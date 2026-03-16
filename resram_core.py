@@ -30,6 +30,13 @@ from scipy.special import factorial
 from matplotlib.colors import ListedColormap
 import lmfit
 
+try:
+    import resram_rust
+    HAS_RUST = True
+except ImportError:
+    HAS_RUST = False
+
+
 
 class load_input:
     """
