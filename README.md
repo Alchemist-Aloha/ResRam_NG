@@ -2,116 +2,108 @@
 
 Welcome! This program helps scientists calculate and "fit" (match) theoretical models to experimental data from **Resonance Raman Spectroscopy**. 
 
+It implements the Independent Mode Displaced Harmonic Oscillator (IMDHO) formalism and Brownian oscillator theory to benchmark DFT functionals against experimental Femtosecond Stimulated Raman Spectroscopy (FSRS) data.
+
 ---
 
-## 1. Installation 🛠️
+## 1. Quick Start (GUI) 🚀
 
-You can now install this program as a Python package. This makes it easy to use `import resram_core` in any of your scripts or notebooks.
+The easiest way to use ResRAM is through the interactive graphical interface.
+
+### Running from source
+If you have `uv` installed, simply run:
+```bash
+uv run ResRamQt.py
+```
+
+### Pre-compiled Binaries
+You can download standalone executables for **Windows**, **Linux**, and **macOS** from the [GitHub Releases](https://github.com/your-repo/releases) page. No Python installation is required for these versions.
+
+> **Note for Linux users:** If you see an error about `libEGL.so.1`, install the following system libraries:
+> `sudo apt-get install libegl1 libgl1-mesa-glx`
+
+---
+
+## 2. GUI Features ✨
+
+The ResRAM GUI is optimized for a smooth, responsive experience:
+*   **Real-time Visualization:** See Absorption, Fluorescence, and Raman Excitation Profiles update as you change parameters.
+*   **Background Calculations:** Heavy spectroscopic simulations run in a separate thread, keeping the interface snappy.
+*   **Debounced Updates:** Table edits are debounced (300ms) to prevent lag while typing.
+*   **Interactive Control:** 
+    *   Toggle individual vibrational modes to include/exclude them from plots.
+    *   Select which parameters (deltas, gamma, E0, etc.) should be varied during the automated fitting process.
+*   **Integrated Fitting:** Run the `lmfit` optimizer directly from the GUI and see the "best fit" results in real-time.
+
+---
+
+## 3. Installation & Development 🛠️
+
+If you want to use the core library in your own scripts or notebooks:
 
 ### Using `uv` (Recommended)
-If you have `uv` installed, run:
 ```bash
 uv pip install .
 ```
 
 ### Using `pip`
-Or, use standard pip:
 ```bash
 pip install .
 ```
 
-## 2. Setting Up Your Computer 💻
-
-Before running the code, you need a few things installed:
-
-1.  **Python:** Download and install the latest version from [python.org](https://www.python.org/).
-2.  **Required Libraries:** Open your terminal (or Command Prompt) and run this command to install the "math and plotting" tools the program needs:
-    ```bash
-    pip install numpy matplotlib scipy lmfit ipykernel tqdm
-    ```
-3.  **Jupyter Notebook:** This program is designed to be run inside a "Notebook" (a file ending in `.ipynb`). Most people use **VS Code** or **JupyterLab** to open them.
+### Required Python Libraries
+If not using `uv`, manual installation:
+```bash
+pip install numpy matplotlib scipy lmfit PyQt6 pyqtgraph
+```
 
 ---
 
-## 3. Optional: Rust Acceleration ⚡
+## 4. Optional: Rust Acceleration ⚡
 
-This project includes an optional **Rust backend** (`resram_rust`) that drastically speeds up the rigorous integration calculations required for resonance Raman cross sections. When compiled, the Rust extension provides a **~4x performance speedup** while maintaining numerical consistency with the Python implementation.
+This project includes an optional **Rust backend** (`resram_rust`) that provides a **~4x performance speedup**.
 
 ### How to Compile the Rust Backend
-
-1. **Install Rust:** Download and install Rust via [rustup.rs](https://rustup.rs/):
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   ```
-2. **Build the extension:** Navigate to the `resram_rust` directory and compile:
+1. **Install Rust:** [rustup.rs](https://rustup.rs/)
+2. **Build:**
    ```bash
    cd resram_rust
    cargo build --release
-   cd ..
    ```
-3. **Copy the shared library:** Move the compiled library into your working directory where the notebook or scripts will run.
+3. **Copy the library** to the root project folder:
    * **Linux:** `cp resram_rust/target/release/libresram_rust.so ./resram_rust.so`
    * **macOS:** `cp resram_rust/target/release/libresram_rust.dylib ./resram_rust.so`
    * **Windows:** `copy resram_rust\target\release\resram_rust.dll .\resram_rust.pyd`
 
-Once the compiled file is in the root project folder, the Python engine (`resram_core.py`) will automatically detect it and seamlessly offload calculations to the faster Rust engine!
+---
+
+## 5. Input Data Format 📂
+
+The program (GUI and Notebook) expects specific `.dat` files in the working directory:
+
+*   **`inp.txt`**: Global settings (Temperature, Refractive Index, etc.).
+*   **`freqs.dat`**: Vibrational frequencies (cm⁻¹).
+*   **`deltas.dat`**: Initial dimensionless displacements.
+*   **`abs_exp.dat`**: Experimental absorption spectrum.
+*   **`fl_exp.dat`**: Experimental fluorescence spectrum.
+*   **`profs_exp.dat`**: Experimental Raman excitation profiles.
+*   **`rpumps.dat`**: Experimental laser excitation wavenumbers.
 
 ---
 
-## 4. What does this program actually do? 🤔
+## 6. Notebook Usage (`.ipynb`) 📓
 
-Imagine you have a molecule (like Bodipy). When you hit it with a laser, it vibrates. This program:
-1.  **Calculates** how that molecule should look in an Absorption or Raman spectrum based on "Displacements" (how much the molecule's shape changes when it's excited).
-2.  **Compares** that calculation to your real experimental data.
-3.  **Adjusts** the variables automatically until the calculation matches the experiment as closely as possible.
-
----
-
-## 5. The Important Files 📂
-
-The program looks for specific files in its folder. Here is what you need to know:
-
-*   **`resram_core.py`**: The "Engine." This contains all the complex math. You usually don't need to change this.
-*   **`inp.txt`**: The "Settings." This is where you set the Temperature, Refractive Index, and initial guesses for the math.
-*   **`freqs.dat`**: A list of vibrational frequencies (wavenumber cm⁻¹).
-*   **`deltas.dat`**: A list of initial guesses for the "Displacements" (how far the atoms move).
-*   **`abs_exp.dat`**: Your real experimental absorption spectrum (vs. wavenumber).
-*   **`fl_exp.dat`**: Your real experimental fluorescence spectrum (vs. wavenumber).
-*   **`profs_exp.dat`**: Your real experimental Raman extinction profiles.
-*   **`rpumps.dat`**: Your real experimental Raman laser energies (wavenumber cm⁻¹).
+If you prefer a programmatic approach, use **`FSRSanalysis_v2.ipynb`**:
+1. Open in VS Code or JupyterLab.
+2. Run the cells sequentially to load data, perform calculations, and execute the fitting loop.
+3. Results are saved into a time-stamped directory (e.g., `2026-03-12_data`).
 
 ---
-
-## 6. How to Run It 🚀
-
-1.  Open the file **`FSRSanalysis_v2.ipynb`** in your Notebook editor.
-2.  The notebook is divided into "Cells." You can run a cell by clicking the **Play** button next to it.
-3.  **Step 1:** The first cells load the engine (`resram_core.py`).
-4.  **Step 2:** Follow the instructions in the notebook to load your data.
-5.  **Step 3:** Run the "Fitting" cell. You will see the program try different numbers to make the graphs match!
-
----
-
-## 7. Understanding the Results 📊
-
-When the program finishes, it creates a folder named with the current date (e.g., `2026-03-12_data`). Inside, you will find:
-*   **`Abs.dat` / `Fl.dat`**: The calculated Absorption and Fluorescence spectra.
-*   **`profs.dat`**: The Raman Excitation Profiles.
-*   **`output.txt`**: A summary of the final "best" numbers found by the program.
-
----
-
-## 💡 Pro-Tips for Beginners
-*   **File Names:** Don't rename the `.dat` files unless you also change the code. The program is specifically looking for names like `freqs.dat`.
-*   **Errors:** If you see a "FileNotFoundError," it usually means the terminal is looking in the wrong folder. Make sure your terminal path matches where the files are saved.
-
-Happy scientific computing!
 
 ## Acknowledgments 🙌
-This program was developed by Likun Cai and is based on the work of Dr. Zachary Piontkowski, Dr Juan S. Sandoval and many others in the field of Raman spectroscopy. For more details, check out their research:
+Developed by **Likun Cai**, based on theoretical frameworks and research from:
+*   **Dr. Zachary Piontkowski** (University of Rochester)
+*   **Dr. Juan S. Sandoval & Dr. David W. McCamant** (University of Rochester) - *J. Phys. Chem. A* 2023, 127, 39, 8238–8251.
+*   **Mukamel et al.** - Brownian oscillator models for solvation.
 
-Piontkowski, Z. (2020). Excited state torsions and electron transfer in dye-sensitizers for light harvesting and photodynamic therapy. University of Rochester.
-
-Sandoval, J. S., & McCamant, D. W. (2023). The best models of Bodipy’s electronic excited state: comparing predictions from various DFT functionals with measurements from femtosecond stimulated Raman spectroscopy. The Journal of Physical Chemistry A, 127(39), 8238-8251.
-
-Li, B., Johnson, A. E., Mukamel, S., & Myers, A. B. (1994). The Brownian oscillator model for solvation effects in spontaneous light emission and their relationship to electron transfer. Journal of the American Chemical Society, 116(24), 11039-11047.
+Happy scientific computing!
