@@ -319,34 +319,60 @@ class SpectrumApp(QMainWindow):
 
         for row in range(len(self.obj_load.delta)):
             label = QTableWidgetItem(f"delta@{self.obj_load.wg[row]:.2f} cm-1")
+            self.table_widget.setItem(row, 0, label)
             self.table_widget.setItem(
                 row, 1, QTableWidgetItem(f"{self.obj_load.delta[row]}")
             )
-            self.table_widget.setItem(row, 0, label)
+            
+            # Update check states
+            plot_item = self.table_widget.item(row, 2)
+            if plot_item:
+                plot_item.setCheckState(Qt.CheckState.Checked if self.plot_switch[row] == 1 else Qt.CheckState.Unchecked)
+            
+            fit_item = self.table_widget.item(row, 3)
+            if fit_item:
+                fit_item.setCheckState(Qt.CheckState.Checked if self.fit_switch[row] == 1 else Qt.CheckState.Unchecked)
+
         self.table_widget.setItem(
             len(self.obj_load.delta), 0, QTableWidgetItem("gamma")
         )
         self.table_widget.setItem(
             len(self.obj_load.delta), 1, QTableWidgetItem(str(self.obj_load.gamma))
         )
+        gamma_fit = self.table_widget.item(len(self.obj_load.delta), 3)
+        if gamma_fit:
+            gamma_fit.setCheckState(Qt.CheckState.Checked if self.fit_switch[len(self.obj_load.delta)] == 1 else Qt.CheckState.Unchecked)
+
         self.table_widget.setItem(
             len(self.obj_load.delta) + 1, 0, QTableWidgetItem("Transition Length")
         )
         self.table_widget.setItem(
             len(self.obj_load.delta) + 1, 1, QTableWidgetItem(str(self.obj_load.M))
         )
+        m_fit = self.table_widget.item(len(self.obj_load.delta) + 1, 3)
+        if m_fit:
+            m_fit.setCheckState(Qt.CheckState.Checked if self.fit_switch[len(self.obj_load.delta) + 1] == 1 else Qt.CheckState.Unchecked)
+
         self.table_widget.setItem(
             len(self.obj_load.delta) + 2, 0, QTableWidgetItem("theta")
         )
         self.table_widget.setItem(
             len(self.obj_load.delta) + 2, 1, QTableWidgetItem(str(self.obj_load.theta))
         )
+        theta_fit = self.table_widget.item(len(self.obj_load.delta) + 2, 3)
+        if theta_fit:
+            theta_fit.setCheckState(Qt.CheckState.Checked if self.fit_switch[len(self.obj_load.delta) + 2] == 1 else Qt.CheckState.Unchecked)
+
         self.table_widget.setItem(
             len(self.obj_load.delta) + 3, 0, QTableWidgetItem("kappa")
         )
         self.table_widget.setItem(
             len(self.obj_load.delta) + 3, 1, QTableWidgetItem(str(self.obj_load.k))
         )
+        kappa_fit = self.table_widget.item(len(self.obj_load.delta) + 3, 3)
+        if kappa_fit:
+            kappa_fit.setCheckState(Qt.CheckState.Checked if self.fit_switch[len(self.obj_load.delta) + 3] == 1 else Qt.CheckState.Unchecked)
+
         self.table_widget.setItem(
             len(self.obj_load.delta) + 4, 0, QTableWidgetItem("Refractive Index")
         )
@@ -359,6 +385,9 @@ class SpectrumApp(QMainWindow):
         self.table_widget.setItem(
             len(self.obj_load.delta) + 5, 1, QTableWidgetItem(str(self.obj_load.E0))
         )
+        e0_fit = self.table_widget.item(len(self.obj_load.delta) + 5, 3)
+        if e0_fit:
+            e0_fit.setCheckState(Qt.CheckState.Checked if self.fit_switch[len(self.obj_load.delta) + 5] == 1 else Qt.CheckState.Unchecked)
         self.table_widget.setItem(
             len(self.obj_load.delta) + 6, 0, QTableWidgetItem("Time step (ps)")
         )
@@ -401,42 +430,37 @@ class SpectrumApp(QMainWindow):
         """
         for i in range(len(self.obj_load.delta)):
             self.obj_load.delta[i] = float(self.table_widget.item(i, 1).text())
-            self.plot_switch[i] = int(float(self.table_widget.item(i, 2).text()))
-            self.fit_switch[i] = int(float(self.table_widget.item(i, 3).text()))
+            self.plot_switch[i] = 1 if self.table_widget.item(i, 2).checkState() == Qt.CheckState.Checked else 0
+            self.fit_switch[i] = 1 if self.table_widget.item(i, 3).checkState() == Qt.CheckState.Checked else 0
 
         self.obj_load.gamma = float(
             self.table_widget.item(len(self.obj_load.delta), 1).text()
         )
-        self.fit_switch[len(self.obj_load.delta)] = int(
-            float(self.table_widget.item(len(self.obj_load.delta), 3).text())
-        )
+        self.fit_switch[len(self.obj_load.delta)] = 1 if self.table_widget.item(len(self.obj_load.delta), 3).checkState() == Qt.CheckState.Checked else 0
+        
         self.obj_load.M = float(
             self.table_widget.item(len(self.obj_load.delta) + 1, 1).text()
         )
-        self.fit_switch[len(self.obj_load.delta) + 1] = int(
-            float(self.table_widget.item(len(self.obj_load.delta) + 1, 3).text())
-        )
+        self.fit_switch[len(self.obj_load.delta) + 1] = 1 if self.table_widget.item(len(self.obj_load.delta) + 1, 3).checkState() == Qt.CheckState.Checked else 0
+        
         self.obj_load.theta = float(
             self.table_widget.item(len(self.obj_load.delta) + 2, 1).text()
         )  # theta parameter
-        self.fit_switch[len(self.obj_load.delta) + 2] = int(
-            float(self.table_widget.item(len(self.obj_load.delta) + 2, 3).text())
-        )
+        self.fit_switch[len(self.obj_load.delta) + 2] = 1 if self.table_widget.item(len(self.obj_load.delta) + 2, 3).checkState() == Qt.CheckState.Checked else 0
+        
         self.obj_load.k = float(
             self.table_widget.item(len(self.obj_load.delta) + 3, 1).text()
         )  # kappa parameter
-        self.fit_switch[len(self.obj_load.delta) + 3] = int(
-            float(self.table_widget.item(len(self.obj_load.delta) + 3, 3).text())
-        )
+        self.fit_switch[len(self.obj_load.delta) + 3] = 1 if self.table_widget.item(len(self.obj_load.delta) + 3, 3).checkState() == Qt.CheckState.Checked else 0
+        
         self.obj_load.n = float(
             self.table_widget.item(len(self.obj_load.delta) + 4, 1).text()
         )  # refractive index
+        
         self.obj_load.E0 = float(
             self.table_widget.item(len(self.obj_load.delta) + 5, 1).text()
         )  # E00 parameter
-        self.fit_switch[len(self.obj_load.delta) + 5] = int(
-            float(self.table_widget.item(len(self.obj_load.delta) + 5, 3).text())
-        )
+        self.fit_switch[len(self.obj_load.delta) + 5] = 1 if self.table_widget.item(len(self.obj_load.delta) + 5, 3).checkState() == Qt.CheckState.Checked else 0
         self.obj_load.ts = float(
             self.table_widget.item(len(self.obj_load.delta) + 6, 1).text()
         )
@@ -570,10 +594,12 @@ class SpectrumApp(QMainWindow):
 
         # 2. Update Raman Excitation Profiles (canvas)
         # Handle scatters (experimental)
-        if not self.rep_scatter_items:
-            # We don't clear everything because of legend, but we might need to reset items
-            # For simplicity in first pass, we clear if structure changed
-            self.canvas.clear()
+        # For simplicity and correctness with toggle, we clear scatters and re-add them
+        # if the total count doesn't match expected visible count.
+        visible_modes_count = sum(self.plot_switch[:len(self.obj_load.wg)])
+        if len(self.rep_scatter_items) != visible_modes_count * len(self.obj_load.rpumps):
+            for item in self.rep_scatter_items:
+                self.canvas.removeItem(item)
             self.rep_scatter_items = []
             for i in range(len(self.obj_load.rpumps)):
                 for j in range(len(self.obj_load.wg)):
@@ -587,29 +613,28 @@ class SpectrumApp(QMainWindow):
                         )
                         scatter.setSymbolBrush(pen)
                         self.rep_scatter_items.append(scatter)
-        else:
-            # Updating individual scatters is complex, if plot_switch didn't change it's okay.
-            # For now, let's just clear if we don't want to track 100+ items perfectly.
-            # But the plan said optimize, so let's stick to lines at least.
-            pass
 
         # Handle lines (calculated)
         if not self.rep_plot_items:
+            # Create ALL potential lines once
             for j in range(len(self.obj_load.wg)):
-                if self.plot_switch[j] == 1:
-                    pen = self.cm[j / len(self.obj_load.wg)]
-                    line = self.canvas.plot(
-                        self.obj_load.convEL,
-                        np.real(np.transpose(raman_cross))[:, j],
-                        pen=pen,
-                        name=f"{self.obj_load.wg[j]:.2f} cm-1",
-                    )
-                    line.setDownsampling(ds=True, auto=True, method="subsample")
-                    self.rep_plot_items.append((j, line))
-        else:
-            # Update lines that are already there
-            for j_idx, line in self.rep_plot_items:
-                line.setData(self.obj_load.convEL, np.real(np.transpose(raman_cross))[:, j_idx])
+                pen = self.cm[j / len(self.obj_load.wg)]
+                line = self.canvas.plot(
+                    self.obj_load.convEL,
+                    np.real(np.transpose(raman_cross))[:, j],
+                    pen=pen,
+                    name=f"{self.obj_load.wg[j]:.2f} cm-1",
+                )
+                line.setDownsampling(ds=True, auto=True, method="subsample")
+                self.rep_plot_items.append(line)
+        
+        # Update data and visibility for all lines
+        for j, line in enumerate(self.rep_plot_items):
+            if self.plot_switch[j] == 1:
+                line.setData(self.obj_load.convEL, np.real(np.transpose(raman_cross))[:, j])
+                line.show()
+            else:
+                line.hide()
 
         # 3. Update Absorption/FL (canvas3)
         if self.abs_plot_item is None:
@@ -810,23 +835,41 @@ class SpectrumApp(QMainWindow):
             label = QTableWidgetItem(f"delta@{self.obj_load.wg[row]:.2f} cm-1")
             self.table_widget.setItem(row, 0, label)
             self.table_widget.setItem(row, 1, item)
-            self.table_widget.setItem(row, 2, QTableWidgetItem("1"))
-            self.table_widget.setItem(row, 3, QTableWidgetItem("1"))
+            
+            # Plot checkbox
+            plot_item = QTableWidgetItem()
+            plot_item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+            plot_item.setCheckState(Qt.CheckState.Checked)
+            self.table_widget.setItem(row, 2, plot_item)
+            
+            # Fit checkbox
+            fit_item = QTableWidgetItem()
+            fit_item.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+            fit_item.setCheckState(Qt.CheckState.Checked)
+            self.table_widget.setItem(row, 3, fit_item)
+
         self.table_widget.setItem(
             len(self.obj_load.delta), 0, QTableWidgetItem("gamma")
         )
         self.table_widget.setItem(
             len(self.obj_load.delta), 1, QTableWidgetItem(str(self.obj_load.inp[0]))
         )
-        self.table_widget.setItem(len(self.obj_load.delta), 3, QTableWidgetItem("1"))
+        gamma_fit = QTableWidgetItem()
+        gamma_fit.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+        gamma_fit.setCheckState(Qt.CheckState.Checked)
+        self.table_widget.setItem(len(self.obj_load.delta), 3, gamma_fit)
+        
         self.table_widget.setItem(
             len(self.obj_load.delta) + 1, 0, QTableWidgetItem("Transition Length (A)")
         )
         self.table_widget.setItem(
             len(self.obj_load.delta) + 1, 1, QTableWidgetItem(str(self.obj_load.inp[7]))
         )
+        m_fit = QTableWidgetItem()
+        m_fit.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+        m_fit.setCheckState(Qt.CheckState.Checked)
         self.table_widget.setItem(
-            len(self.obj_load.delta) + 1, 3, QTableWidgetItem("1")
+            len(self.obj_load.delta) + 1, 3, m_fit
         )
         self.table_widget.setItem(
             len(self.obj_load.delta) + 2, 0, QTableWidgetItem("theta")
@@ -834,8 +877,11 @@ class SpectrumApp(QMainWindow):
         self.table_widget.setItem(
             len(self.obj_load.delta) + 2, 1, QTableWidgetItem(str(self.obj_load.inp[1]))
         )
+        theta_fit = QTableWidgetItem()
+        theta_fit.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+        theta_fit.setCheckState(Qt.CheckState.Checked)
         self.table_widget.setItem(
-            len(self.obj_load.delta) + 2, 3, QTableWidgetItem("1")
+            len(self.obj_load.delta) + 2, 3, theta_fit
         )
         self.table_widget.setItem(
             len(self.obj_load.delta) + 3, 0, QTableWidgetItem("kappa")
@@ -843,8 +889,11 @@ class SpectrumApp(QMainWindow):
         self.table_widget.setItem(
             len(self.obj_load.delta) + 3, 1, QTableWidgetItem(str(self.obj_load.inp[3]))
         )
+        kappa_fit = QTableWidgetItem()
+        kappa_fit.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+        kappa_fit.setCheckState(Qt.CheckState.Unchecked)
         self.table_widget.setItem(
-            len(self.obj_load.delta) + 3, 3, QTableWidgetItem("0")
+            len(self.obj_load.delta) + 3, 3, kappa_fit
         )
         self.table_widget.setItem(
             len(self.obj_load.delta) + 4, 0, QTableWidgetItem("Refractive Index")
@@ -852,8 +901,9 @@ class SpectrumApp(QMainWindow):
         self.table_widget.setItem(
             len(self.obj_load.delta) + 4, 1, QTableWidgetItem(str(self.obj_load.inp[8]))
         )
+        # N/A check
         self.table_widget.setItem(
-            len(self.obj_load.delta) + 4, 3, QTableWidgetItem("0")
+            len(self.obj_load.delta) + 4, 3, QTableWidgetItem("N/A")
         )
         self.table_widget.setItem(
             len(self.obj_load.delta) + 5, 0, QTableWidgetItem("E00")
@@ -861,8 +911,11 @@ class SpectrumApp(QMainWindow):
         self.table_widget.setItem(
             len(self.obj_load.delta) + 5, 1, QTableWidgetItem(str(self.obj_load.inp[2]))
         )
+        e0_fit = QTableWidgetItem()
+        e0_fit.setFlags(Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+        e0_fit.setCheckState(Qt.CheckState.Unchecked)
         self.table_widget.setItem(
-            len(self.obj_load.delta) + 5, 3, QTableWidgetItem("0")
+            len(self.obj_load.delta) + 5, 3, e0_fit
         )
         self.table_widget.setItem(
             len(self.obj_load.delta) + 6, 0, QTableWidgetItem("Time step (ps)")
