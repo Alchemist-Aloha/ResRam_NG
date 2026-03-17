@@ -83,6 +83,7 @@ class load_input:
 
         # Load parameters from inp.txt
         self.inp_txt()
+        self.update_params()
 
         # Load experimental spectra if available
         try:
@@ -269,6 +270,97 @@ class load_input:
         ## Prefactors for absorption and Raman cross-sections ##
         if self.order == 1:
             # (0.3/pi) puts it in differential cross section
+            self.preR = 2.08e-20 * (self.ts**2)
+        elif self.order > 1:
+            self.preR = 2.08e-20 * (self.ts_rot**2)
+
+        self.preA = ((5.744e-3) / self.n) * self.ts
+        self.preF = self.preA * self.n**2
+
+    def update_params(self):
+        """
+        Refreshes derived parameters from the current set of base parameters.
+        This includes thermal factors, Brownian oscillator parameters, reorganization 
+        energies, and integration time/energy grids.
+        """
+        # Physical constants
+        self.kbT = 0.695 * self.T  # Thermal energy in wavenumbers (cm^-1)
+        self.cutoff = self.kbT * 0.1  # Cutoff for Boltzmann distribution
+
+        # Thermal occupation factors (η)
+        if self.T > 0.1:
+            self.beta = 1 / self.kbT  # beta in cm^-1
+            self.eta = 1 / (np.exp(self.wg / self.kbT) - 1)
+        else:
+            self.beta = 1.0e10  # Effectively infinite for T=0
+            self.eta = np.zeros(len(self.wg))
+
+        ## Brownian Oscillator parameters ##
+        # Solvent fluctuation parameters derived from κ and Γ
+        self.D = (
+            self.gamma
+            * (1 + 0.85 * self.k + 0.88 * self.k**2)
+            / (2.355 + 1.76 * self.k)
+        )
+        self.L = self.k * self.D  # LAMBDA parameter (Λ)
+
+        # Reorganization energies
+        self.s_reorg = (
+            self.beta * (self.L / self.k) ** 2 / 2
+        )  # Solvent reorganization energy (cm^-1)
+        self.w_reorg = 0.5 * np.sum(
+            (self.delta) ** 2 * self.wg
+        )  # Vibrational reorganization energy
+        self.reorg = self.w_reorg + self.s_reorg  # Total reorganization energy
+
+        ## Time and energy range definition ##
+        self.UB_time = self.ntime * self.ts  # Upper bound in time range
+        self.t = np.linspace(0, self.UB_time, int(self.ntime))  # time range array in ps
+        self.th = np.array(self.t / self.hbar)  # Scaled time (t/hbar)
+
+        self.EL = np.linspace(self.E0 - self.EL_reach, self.E0 + self.EL_reach, 1000)
+        # static inhomogeneous convolution range
+        self.E0_range = np.linspace(-self.EL_reach * 0.5, self.EL_reach * 0.5, 501)
+
+        # Higher-order calculation parameters (rotational coordinates)
+        self.ntime_rot = self.ntime / np.sqrt(2)
+        self.ts_rot = self.ts / np.sqrt(2)
+        self.UB_time_rot = self.ntime_rot * self.ts_rot
+        self.tp = np.linspace(0, self.UB_time_rot, int(self.ntime_rot))
+        self.tm = np.append(-np.flip(self.tp[1:], axis=0), self.tp)
+
+        # Grid after convolution with inhomogeneous distribution
+        self.convEL = np.linspace(
+            self.E0 - self.EL_reach * 0.5,
+            self.E0 + self.EL_reach * 0.5,
+            (
+                max(len(self.E0_range), len(self.EL))
+                - min(len(self.E0_range), len(self.EL))
+                + 1
+            ),
+        )
+
+        # Refresh Huang-Rhys factors
+        self.S = (self.delta**2) / 2
+
+        # Update Raman shift axis (output Raman spectra range)
+        # Using end rshift from inp[10] if raman_maxcalc is not set
+        r_end = getattr(self, "raman_maxcalc", float(self.inp[10]))
+        self.rshift = np.arange(
+            float(self.inp[9]), r_end, float(self.inp[11])
+        )
+        self.res = float(self.inp[12])
+
+        # Update Raman pump indices
+        try:
+            diffs = np.abs(self.convEL[:, np.newaxis] - self.rpumps)
+            self.rp = np.argmin(diffs, axis=0)
+            self.rp = self.rp.astype(int)
+        except Exception:
+            pass
+
+        # Update prefactors
+        if self.order == 1:
             self.preR = 2.08e-20 * (self.ts**2)
         elif self.order > 1:
             self.preR = 2.08e-20 * (self.ts_rot**2)
@@ -527,18 +619,8 @@ def cross_sections(obj):
     Returns:
         tuple: (abs_cross, fl_cross, raman_cross, boltz_state, boltz_coef)
     """
-    obj.S = (obj.delta**2) / 2
+    obj.update_params()
     sqrt2 = np.sqrt(2)
-
-    # Refresh derived parameters
-    obj.D = obj.gamma * (1 + 0.85 * obj.k + 0.88 * obj.k**2) / (2.355 + 1.76 * obj.k)
-    obj.L = obj.k * obj.D
-    obj.EL = np.linspace(obj.E0 - obj.EL_reach, obj.E0 + obj.EL_reach, 1000)
-    obj.convEL = np.linspace(
-        obj.E0 - obj.EL_reach * 0.5,
-        obj.E0 + obj.EL_reach * 0.5,
-        (max(len(obj.E0_range), len(obj.EL)) - min(len(obj.E0_range), len(obj.EL)) + 1),
-    )
 
     if HAS_RUST and obj.order == 1:
         abs_c, fl_c, ram_c = resram_rust.cross_sections_rust(
@@ -665,7 +747,7 @@ def cross_sections(obj):
     return obj.abs_cross, obj.fl_cross, obj.raman_cross, obj.boltz_state, obj.boltz_coef
 
 
-def run_save(obj, current_time_str):
+def run_save(obj, current_time_str=None):
     """
     Executes the simulation and saves all resulting data to a time-stamped directory.
 
@@ -675,6 +757,9 @@ def run_save(obj, current_time_str):
     - Raman spectra at specific pumps (raman_spec.dat).
     - Summary output file (output.txt).
     """
+    if current_time_str is None:
+        current_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
     abs_cross, fl_cross, raman_cross, boltz_states, boltz_coef = cross_sections(obj)
     try:
         raman_spec = np.zeros((len(obj.rshift), len(obj.rpumps)))
@@ -1064,6 +1149,8 @@ def raman_residual(param, fit_obj=None):
     fit_obj.k = param.valuesdict()["kappa"]
     fit_obj.theta = param.valuesdict()["theta"]
     fit_obj.E0 = param.valuesdict()["E0"]
+
+    fit_obj.update_params()
 
     if HAS_RUST and fit_obj.order == 1:
         if fit_obj.profs_exp.ndim == 1:
