@@ -16,7 +16,10 @@ dependencies = [
     "matplotlib>=3.10.7",
     "numpy>=1.20.0",
     "scipy>=1.7.0",
-    "maturin"
+    "maturin",
+    "tqdm",
+    "pyqt6",
+    "pyqtgraph"
 ]
 
 [tool.hatch.build.targets.wheel]

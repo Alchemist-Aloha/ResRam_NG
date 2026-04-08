@@ -63,7 +63,7 @@ class load_input:
     def __init__(self, dir=None):
         if dir is None:
             # Set default directory as empty if none provided
-            self.dir = "./"
+            self.dir = "./example/"
         else:
             self.dir = dir
 

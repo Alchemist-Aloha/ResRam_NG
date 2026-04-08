@@ -809,7 +809,7 @@ class SpectrumApp(QMainWindow):
     def initialize(self):
         """Initialize the GUI
         """
-        self.dir = ""
+        self.dir = "./example"
         self.load_files()
         
         # Reset plot item storage

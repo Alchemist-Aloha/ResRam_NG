@@ -16,12 +16,6 @@ If you have `uv` installed, simply run:
 uv run ResRamQt.py
 ```
 
-### Pre-compiled Binaries
-You can download standalone executables for **Windows**, **Linux**, and **macOS** from the [GitHub Releases](https://github.com/your-repo/releases) page. No Python installation is required for these versions.
-
-> **Note for Linux users:** If you see an error about `libEGL.so.1`, install the following system libraries:
-> `sudo apt-get install libegl1 libgl1-mesa-glx`
-
 ---
 
 ## 2. GUI Features ✨
@@ -43,12 +37,12 @@ If you want to use the core library in your own scripts or notebooks:
 
 ### Using `uv` (Recommended)
 ```bash
-uv pip install .
+uv pip install -e .
 ```
 
 ### Using `pip`
 ```bash
-pip install .
+pip install -e .
 ```
 
 ### Required Python Libraries
@@ -65,15 +59,20 @@ This project includes an optional **Rust backend** (`resram_rust`) that provides
 
 ### How to Compile the Rust Backend
 1. **Install Rust:** [rustup.rs](https://rustup.rs/)
-2. **Build:**
+2. **Install Maturin**
+   ```bash
+   uv pip install maturin
+   ```
+3. **Build wheel:**
    ```bash
    cd resram_rust
-   cargo build --release
+   maturin build --release
    ```
-3. **Copy the library** to the root project folder:
-   * **Linux:** `cp resram_rust/target/release/libresram_rust.so ./resram_rust.so`
-   * **macOS:** `cp resram_rust/target/release/libresram_rust.dylib ./resram_rust.so`
-   * **Windows:** `copy resram_rust\target\release\resram_rust.dll .\resram_rust.pyd`
+3. **Install wheel:**
+   ```bash
+   # Replace the .whl to your compiled filename
+   uv pip install target/wheels/resram_rust-0.1.0-cp314-cp314-manylinux_2_34_x86_64.whl
+   ```
 
 ---
 
@@ -102,8 +101,7 @@ If you prefer a programmatic approach, use **`FSRSanalysis_v2.ipynb`**:
 
 ## Acknowledgments 🙌
 Developed by **Likun Cai**, based on theoretical frameworks and research from:
-*   **Dr. Zachary Piontkowski** (University of Rochester)
-*   **Dr. Juan S. Sandoval & Dr. David W. McCamant** (University of Rochester) - *J. Phys. Chem. A* 2023, 127, 39, 8238–8251.
+*   **Dr. Zachary Piontkowski, Dr. Juan S. Sandoval & Prof. David W. McCamant** (University of Rochester) 
 *   **Mukamel et al.** - Brownian oscillator models for solvation.
 
 Happy scientific computing!
