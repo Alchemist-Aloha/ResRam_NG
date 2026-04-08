@@ -218,7 +218,7 @@ class SpectrumApp(QMainWindow):
     """
     def __init__(self):
         super().__init__()
-        self.dir = ""
+        self.dir = "./example/"
         # multithread
         self.threadpool = QThreadPool()
         # print("Multithreading with maximum %d threads" %self.threadpool.maxThreadCount())
@@ -809,7 +809,7 @@ class SpectrumApp(QMainWindow):
     def initialize(self):
         """Initialize the GUI
         """
-        self.dir = "./example"
+        self.dir = "./example/"
         self.load_files()
         
         # Reset plot item storage
