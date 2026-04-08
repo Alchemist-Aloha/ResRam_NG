@@ -16,6 +16,7 @@ dependencies = [
     "matplotlib>=3.10.7",
     "numpy>=1.20.0",
     "scipy>=1.7.0",
+    "maturin"
 ]
 
 [tool.hatch.build.targets.wheel]
