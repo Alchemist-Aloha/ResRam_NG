@@ -218,7 +218,7 @@ class SpectrumApp(QMainWindow):
     """
     def __init__(self):
         super().__init__()
-        self.dir = "./example/"
+        self.dir = "example/"
         # multithread
         self.threadpool = QThreadPool()
         # print("Multithreading with maximum %d threads" %self.threadpool.maxThreadCount())
@@ -412,7 +412,7 @@ class SpectrumApp(QMainWindow):
         self.table_widget.setItem(
             len(self.obj_load.delta) + 12,
             1,
-            QTableWidgetItem(str(self.obj_load.raman_maxcalc)),
+            QTableWidgetItem(str(getattr(self.obj_load, "raman_maxcalc", self.obj_load.inp[10]))),
         )
         self.table_widget.setItem(
             len(self.obj_load.delta) + 13, 0, QTableWidgetItem("EL reach")
@@ -420,7 +420,7 @@ class SpectrumApp(QMainWindow):
         self.table_widget.setItem(
             len(self.obj_load.delta) + 13,
             1,
-            QTableWidgetItem(str(self.obj_load.EL_reach)),
+            QTableWidgetItem(str(getattr(self.obj_load, "EL_reach", self.obj_load.inp[6]))),
         )
         self.table_widget.itemChanged.connect(self.update_spectrum)
         self.plot_data()
@@ -721,7 +721,15 @@ class SpectrumApp(QMainWindow):
         if self.folder_path:
             print("Selected folder:", self.folder_path)
             self.dir = self.folder_path + "/"
-            self.obj_load = load_input(self.dir)
+            try:
+                self.obj_load = load_input(self.dir)
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    "Folder Load Failed",
+                    f"Could not load required files from:\n{self.folder_path}\n\n{e}",
+                )
+                return
             
             # Reset plot item storage on folder change
             self.raman_plot_items = []
@@ -809,7 +817,7 @@ class SpectrumApp(QMainWindow):
     def initialize(self):
         """Initialize the GUI
         """
-        self.dir = "./example/"
+        self.dir = "example/"
         self.load_files()
         
         # Reset plot item storage

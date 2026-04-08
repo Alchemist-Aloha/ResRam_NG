@@ -62,17 +62,48 @@ class load_input:
 
     def __init__(self, dir=None):
         if dir is None:
-            # Set default directory as empty if none provided
-            self.dir = "./example/"
+            self.dir = "example/"
         else:
             self.dir = dir
 
+        self.dir = os.path.abspath(self.dir)
+        if not self.dir.endswith(os.sep):
+            self.dir += os.sep
+
+        def _safe_loadtxt(filename):
+            path = os.path.join(self.dir, filename)
+            if not os.path.exists(path):
+                return None
+            return np.atleast_1d(np.asarray(np.loadtxt(path), dtype=float))
+
         # Ground state normal mode frequencies cm^-1 (freqs.dat)
-        self.wg = np.asarray(np.loadtxt(self.dir + "freqs.dat"))
+        freqs = _safe_loadtxt("freqs.dat")
+        if freqs is None:
+            print(f"Missing required file: {os.path.join(self.dir, 'freqs.dat')}. Exiting.")
+            sys.exit(1)
+        else:
+            self.wg = freqs
         # Excited state normal mode frequencies cm^-1
-        self.we = np.asarray(np.loadtxt(self.dir + "freqs.dat"))
+        self.we = np.copy(self.wg)
         # Dimensionless displacements (deltas.dat)
-        self.delta = np.asarray(np.loadtxt(self.dir + "deltas.dat"))
+        deltas = _safe_loadtxt("deltas.dat")
+        if deltas is None:
+            print(f"Missing required file: {os.path.join(self.dir, 'deltas.dat')}. Exiting.")
+            sys.exit(1)
+        else:
+            self.delta = deltas
+
+        if len(self.delta) != len(self.wg):
+            n = min(len(self.delta), len(self.wg))
+            if n == 0:
+                self.wg = np.array([], dtype=float)
+                self.we = np.array([], dtype=float)
+                self.delta = np.array([], dtype=float)
+            else:
+                print("freqs.dat and deltas.dat length mismatch. Truncating to shortest length.")
+                self.wg = self.wg[:n]
+                self.we = self.we[:n]
+                self.delta = self.delta[:n]
 
         # UI/Plotting helpers
         self.colors = plt.cm.hsv(np.linspace(0, 1, len(self.wg)))
@@ -83,6 +114,8 @@ class load_input:
 
         # Load parameters from inp.txt
         self.inp_txt()
+        self.raman_maxcalc = float(self.inp[10])
+        self.EL_reach = float(self.inp[6])
         self.update_params()
 
         # Load experimental spectra if available
