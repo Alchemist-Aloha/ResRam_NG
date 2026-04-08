@@ -22,8 +22,25 @@ dependencies = [
     "pyqtgraph"
 ]
 
+[project.scripts]
+resram-gui = "resram_ng.ResRamQt:main"
+resram-rust-build = "resram_ng.rust_tools:build_wheel"
+resram-rust-install = "resram_ng.rust_tools:install_latest_wheel"
+resram-rust-develop = "resram_ng.rust_tools:develop"
+
 [tool.hatch.build.targets.wheel]
-packages = ["resram_core.py"]
+packages = ["src/resram_ng"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/resram_ng",
+    "src/resram_rust",
+    "benchmark_resram.py",
+    "fit_resram_python.py",
+    "fit_resram_rust.py",
+    "load_dataset.py",
+    "README.md",
+]
 
 [dependency-groups]
 dev = [

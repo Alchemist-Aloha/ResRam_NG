@@ -1,5 +1,5 @@
-import resram_core
-from resram_core import load_input, resram_data, param_init, raman_residual, run_save
+import resram_ng.resram_core as resram_core
+from resram_ng.resram_core import load_input, resram_data, param_init, raman_residual, run_save
 from tqdm import tqdm
 import time
 from datetime import datetime

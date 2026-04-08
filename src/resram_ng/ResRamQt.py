@@ -42,7 +42,17 @@ from math import factorial
 import numpy as np
 import lmfit
 # import toml
-from resram_core import load_input, g, A, R, cross_sections, resram_data, param_init, raman_residual, run_save
+from .resram_core import (
+    load_input,
+    g,
+    A,
+    R,
+    cross_sections,
+    resram_data,
+    param_init,
+    raman_residual,
+    run_save,
+)
 
 
 """    

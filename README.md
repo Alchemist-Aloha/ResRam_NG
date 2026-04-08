@@ -13,7 +13,7 @@ The easiest way to use ResRAM is through the interactive graphical interface.
 ### Running from source
 If you have `uv` installed, simply run:
 ```bash
-uv run ResRamQt.py
+uv run resram-gui
 ```
 
 ---
@@ -55,7 +55,7 @@ pip install numpy matplotlib scipy lmfit PyQt6 pyqtgraph
 
 ## 4. Optional: Rust Acceleration ⚡
 
-This project includes an optional **Rust backend** (`resram_rust`) that provides a **~4x performance speedup**.
+This project includes an optional **Rust backend** (`src/resram_rust`) that provides a **~4x performance speedup** on Windows machines.
 
 ### How to Compile the Rust Backend
 1. **Install Rust:** [rustup.rs](https://rustup.rs/)
@@ -65,13 +65,16 @@ This project includes an optional **Rust backend** (`resram_rust`) that provides
    ```
 3. **Build wheel:**
    ```bash
-   cd resram_rust
-   maturin build --release
+   uv run resram-rust-build
    ```
 3. **Install wheel:**
    ```bash
-   # Replace the .whl to your compiled filename
-   uv pip install target/wheels/resram_rust-0.1.0-cp314-cp314-manylinux_2_34_x86_64.whl
+   uv run resram-rust-install
+   ```
+
+Alternative one-step local development install:
+```bash
+uv run resram-rust-develop
    ```
 
 ---
@@ -90,12 +93,9 @@ The program (GUI and Notebook) expects specific `.dat` files in the working dire
 
 ---
 
-## 6. Notebook Usage (`.ipynb`) 📓
+## 6. Python Scripts Usage (`.py`) 📓
 
-If you prefer a programmatic approach, use **`FSRSanalysis_v2.ipynb`**:
-1. Open in VS Code or JupyterLab.
-2. Run the cells sequentially to load data, perform calculations, and execute the fitting loop.
-3. Results are saved into a time-stamped directory (e.g., `2026-03-12_data`).
+
 
 ---
 

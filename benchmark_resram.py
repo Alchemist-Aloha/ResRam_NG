@@ -1,5 +1,5 @@
-import resram_core
-from resram_core import load_input, param_init, raman_residual
+import resram_ng.resram_core as resram_core
+from resram_ng.resram_core import load_input, param_init, raman_residual
 import time
 import numpy as np
 
