@@ -34,6 +34,9 @@ resram-rust-develop = "resram_ng.rust_tools:develop"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/resram_ng"]
+include = [
+    "src/resram_ng/example/**",
+]
 
 [tool.hatch.build.targets.sdist]
 include = [

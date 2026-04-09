@@ -24,6 +24,7 @@ Key Parameters:
 import sys
 from datetime import datetime
 import os
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import factorial
@@ -35,6 +36,11 @@ try:
     HAS_RUST = True
 except ImportError:
     HAS_RUST = False
+
+
+def get_default_example_dir() -> str:
+    """Return the package-relative example data directory."""
+    return str((Path(__file__).resolve().parent / "example"))
 
 
 
@@ -62,7 +68,7 @@ class load_input:
 
     def __init__(self, dir=None):
         if dir is None:
-            self.dir = "example/"
+            self.dir = get_default_example_dir()
         else:
             self.dir = dir
 

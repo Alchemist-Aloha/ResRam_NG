@@ -44,6 +44,7 @@ import lmfit
 # import toml
 from .resram_core import (
     load_input,
+    get_default_example_dir,
     g,
     A,
     R,
@@ -228,7 +229,7 @@ class SpectrumApp(QMainWindow):
     """
     def __init__(self):
         super().__init__()
-        self.dir = "example/"
+        self.dir = get_default_example_dir()
         # multithread
         self.threadpool = QThreadPool()
         # print("Multithreading with maximum %d threads" %self.threadpool.maxThreadCount())
@@ -321,6 +322,20 @@ class SpectrumApp(QMainWindow):
         self.plot_data()
         print("Initialized")
         self.showMaximized()
+
+    def refresh_dir_indicator(self):
+        """Sync current-directory label with the active loaded folder."""
+        # Use the loader's resolved directory when available.
+        if hasattr(self, "obj_load") and hasattr(self.obj_load, "dir"):
+            self.dir = self.obj_load.dir
+        else:
+            self.dir = os.path.abspath(self.dir)
+
+        if not self.dir.endswith(os.sep):
+            self.dir += os.sep
+
+        if hasattr(self, "dirlabel"):
+            self.dirlabel.setText("Current data folder: " + self.dir)
 
     def sendto_table(self):
         """Send the data to the table
@@ -751,7 +766,7 @@ class SpectrumApp(QMainWindow):
             self.fl_exp_plot_item = None
             
             self.sendto_table()
-            self.dirlabel.setText("Current data folder: " + self.dir)
+            self.refresh_dir_indicator()
             self.plot_data()
 
     def create_buttons(self):
@@ -784,8 +799,9 @@ class SpectrumApp(QMainWindow):
         spacer = QSpacerItem(
             40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
         )
-        self.dirlabel = QLabel("Current data folder:/ " + self.dir)
+        self.dirlabel = QLabel("Current data folder: " + self.dir)
         button_layout.addWidget(self.dirlabel)
+        self.refresh_dir_indicator()
         button_layout.addItem(spacer)
         # button_layout.addWidget(self.add_button)
         button_layout.addWidget(self.update_button)
@@ -822,12 +838,13 @@ class SpectrumApp(QMainWindow):
         """Load the files from the directory
         """
         self.obj_load = load_input(self.dir)
+        self.refresh_dir_indicator()
         return self.obj_load
 
     def initialize(self):
         """Initialize the GUI
         """
-        self.dir = "example/"
+        self.dir = get_default_example_dir()
         self.load_files()
         
         # Reset plot item storage
@@ -842,7 +859,7 @@ class SpectrumApp(QMainWindow):
         self.obj2table()
         print("Initialized. Files loaded from the working folder.")
         self.plot_data()
-        self.dirlabel.setText("Current data folder: /" + self.dir)
+        self.refresh_dir_indicator()
 
     def obj2table(self):
         """Convert the object to a table
