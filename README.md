@@ -55,13 +55,13 @@ pip install numpy matplotlib scipy lmfit PyQt6 pyqtgraph
 
 ## 4. Optional: Rust Acceleration ⚡
 
-This project includes an optional **Rust backend** (`src/resram_rust`) that provides a **~4x performance speedup** on Windows machines.
+This project includes an optional **Rust backend** (`src/resram_rust`) that provides up to **~4x performance speedup**.
 
 ### How to Compile the Rust Backend
 1. **Install Rust:** [rustup.rs](https://rustup.rs/)
 2. **Install Maturin**
    ```bash
-   uv pip install maturin
+   uv pip install '.[rust]'
    ```
 3. **Build wheel:**
    ```bash
@@ -76,6 +76,8 @@ Alternative one-step local development install:
 ```bash
 uv run resram-rust-develop
    ```
+
+If `rustc` is not installed, Rust compile commands are skipped and the Python implementation is used.
 
 ---
 

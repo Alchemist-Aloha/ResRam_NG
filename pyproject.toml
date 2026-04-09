@@ -16,10 +16,14 @@ dependencies = [
     "matplotlib>=3.10.7",
     "numpy>=1.20.0",
     "scipy>=1.7.0",
-    "maturin",
     "tqdm",
     "pyqt6",
     "pyqtgraph"
+]
+
+[project.optional-dependencies]
+rust = [
+    "maturin>=1.7.0",
 ]
 
 [project.scripts]
